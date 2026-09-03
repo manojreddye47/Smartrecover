@@ -1255,7 +1255,6 @@ async function sendWhatsAppPaymentLink(toPhone, customerName, amount, paymentLin
   try {
     const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
 
-    // Updated payload using Meta's pre-approved 'hello_world' template
     const response = await axios.post(
       url,
       {
@@ -1263,10 +1262,18 @@ async function sendWhatsAppPaymentLink(toPhone, customerName, amount, paymentLin
         to: cleanPhone,
         type: 'template',
         template: {
-          name: 'hello_world',
-          language: {
-            code: 'en_US'
-          }
+          name: 'payment_recovery_link',
+          language: { code: 'en' },
+          components: [
+            {
+              type: 'body',
+              parameters: [
+                { type: 'text', text: customerName },
+                { type: 'text', text: String(amount) },
+                { type: 'text', text: paymentLink }
+              ]
+            }
+          ]
         }
       },
       {
@@ -1277,7 +1284,7 @@ async function sendWhatsAppPaymentLink(toPhone, customerName, amount, paymentLin
       }
     );
 
-    console.log(`\n✅ [META WHATSAPP DISPATCH] Message delivered to ${cleanPhone}! ID: ${response.data.messages[0].id}`);
+    console.log(`\n✅ [META WHATSAPP DISPATCH] Custom recovery template delivered to ${cleanPhone}! ID: ${response.data.messages[0].id}`);
     return true;
   } catch (err) {
     console.error('❌ Meta WhatsApp Delivery Error:', err.response?.data || err.message);
