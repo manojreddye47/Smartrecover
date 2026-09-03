@@ -1238,7 +1238,51 @@ app.get('/test-voice-call', (req, res) => {
     </html>
   `);
 });
+/**
+ * AUTOMATED WHATSAPP DISPATCH HELPER (META CLOUD API)
+ */
+async function sendWhatsAppPaymentLink(toPhone, customerName, amount, paymentLink) {
+  const token = process.env.META_WHATSAPP_TOKEN;
+  const phoneNumberId = process.env.META_PHONE_NUMBER_ID;
 
+  if (!token || !phoneNumberId) {
+    console.log('\n⚠️ Meta WhatsApp credentials missing in .env. Skipping dispatch.');
+    return false;
+  }
+
+  // Format phone number to numbers-only format (e.g. 919014453381)
+  const cleanPhone = toPhone.replace(/\D/g, '');
+
+  try {
+    const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
+
+    const response = await axios.post(
+      url,
+      {
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        to: cleanPhone,
+        type: 'text',
+        text: {
+          preview_url: true,
+          body: `Namaste ${customerName}! 🙏\n\nYour payment of ₹${amount} for your recent order could not be completed.\n\nYou can easily complete your payment using this secure Razorpay link:\n👉 ${paymentLink}\n\nThank you, SmartRecover Team.`
+        }
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    console.log(`\n✅ [META WHATSAPP DISPATCH] Live message delivered to ${cleanPhone}! SID: ${response.data.messages[0].id}`);
+    return true;
+  } catch (err) {
+    console.error('❌ Meta WhatsApp Delivery Error:', err.response?.data || err.message);
+    return false;
+  }
+}
 /**
  * AUTOMATED MULTI-CHANNEL DISPATCH ENGINE
  */
@@ -1261,6 +1305,8 @@ async function triggerRecoveryWorkflow(job, customer, strategy) {
     }
 
     await supabase.from('recovery_jobs').update({ payment_link: paymentLink }).eq('id', job.id);
+
+    await sendWhatsAppPaymentLink(customer.phone, customer.name, customer.amount, paymentLink);
 
     if (strategy.recommended_tier === 'TIER2_HINGLISH_CALL') {
       console.log(`\n📞 [TIER 2 AUTOMATED DISPATCH] Initiating AI Voice Session for ${customer.phone}`);
