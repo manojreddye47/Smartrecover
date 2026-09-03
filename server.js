@@ -1432,6 +1432,10 @@ Customer Payload: ${JSON.stringify(customer)}`;
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 SmartRecover Engine live on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 SmartRecover Engine live on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
