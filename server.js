@@ -1250,22 +1250,23 @@ async function sendWhatsAppPaymentLink(toPhone, customerName, amount, paymentLin
     return false;
   }
 
-  // Format phone number to numbers-only format (e.g. 919014453381)
   const cleanPhone = toPhone.replace(/\D/g, '');
 
   try {
     const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
 
+    // Updated payload using Meta's pre-approved 'hello_world' template
     const response = await axios.post(
       url,
       {
         messaging_product: 'whatsapp',
-        recipient_type: 'individual',
         to: cleanPhone,
-        type: 'text',
-        text: {
-          preview_url: true,
-          body: `Namaste ${customerName}! 🙏\n\nYour payment of ₹${amount} for your recent order could not be completed.\n\nYou can easily complete your payment using this secure Razorpay link:\n👉 ${paymentLink}\n\nThank you, SmartRecover Team.`
+        type: 'template',
+        template: {
+          name: 'hello_world',
+          language: {
+            code: 'en_US'
+          }
         }
       },
       {
@@ -1276,7 +1277,7 @@ async function sendWhatsAppPaymentLink(toPhone, customerName, amount, paymentLin
       }
     );
 
-    console.log(`\n✅ [META WHATSAPP DISPATCH] Live message delivered to ${cleanPhone}! SID: ${response.data.messages[0].id}`);
+    console.log(`\n✅ [META WHATSAPP DISPATCH] Message delivered to ${cleanPhone}! ID: ${response.data.messages[0].id}`);
     return true;
   } catch (err) {
     console.error('❌ Meta WhatsApp Delivery Error:', err.response?.data || err.message);
